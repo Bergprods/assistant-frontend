@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  frontend:
+    build:
+      context: ../../frontend
+    volumes:
+      - ../../frontend:/app
+    ports:
+      - "5174:5174"
+    command: npm run dev
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    external: true

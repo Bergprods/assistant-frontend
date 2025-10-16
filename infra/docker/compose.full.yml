@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  assistant_backend:
+    image: ghcr.io/bergprods/assistant-backend:main
+    env_file:
+      - ../../assistant-backend/.env
+    networks:
+      - appnet
+
+  my_assistant_core:
+    image: ghcr.io/bergprods/my-assistant-core:main
+    networks:
+      - appnet
+    depends_on:
+      - assistant_backend
+
+  frontend:
+    image: ghcr.io/bergprods/frontend:main
+    ports:
+      - "5174:80"
+    networks:
+      - appnet
+    depends_on:
+      - my_assistant_core
+
+networks:
+  appnet:
+    external: true

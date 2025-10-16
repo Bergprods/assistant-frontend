@@ -1,0 +1,28 @@
+{
+  "typescript.tsdk": "./frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "eslint.nodePath": "./frontend/node_modules",
+  "eslint.workingDirectories": [
+    {
+      "directory": "frontend",
+      "changeProcessCWD": true
+    }
+  ],
+  "files.exclude": {
+    "**/node_modules": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.venv": true,
+    "frontend/dist": true
+  },
+  "css.validate": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "extensions.recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss"
+  ]
+}
+
+
