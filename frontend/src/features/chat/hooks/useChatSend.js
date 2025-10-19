@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { AgentsClient } from '@services/AgentsClient'
+import { OrchestratorClient } from '@services/OrchestratorClient'
 import { cleanDescription, summarizeTask } from '@utils/textHelpers'
 import { detectHaIntent } from '@utils/taskHelpers'
 
@@ -10,6 +11,7 @@ export function useChatSend({ conversationId, selectedChatId, append, appendTo, 
 	const [error, setError] = useState(null)
 				const agentsClient = new AgentsClient()
 			const routerClient = new ChatClient()
+			const orchClient = new OrchestratorClient()
 		const workflowId = import.meta.env?.VITE_OPENAI_WORKFLOW_ID
 				const smalltalkerWorkflowId = import.meta.env?.VITE_SMALLTALKER_WORKFLOW_ID
 	const seenTurnIdsRef = useRef(new Set())
@@ -26,6 +28,11 @@ export function useChatSend({ conversationId, selectedChatId, append, appendTo, 
 								if (engine === 'router') {
 									data = await routerClient.sendMessage(convId, text.trim(), { model })
 									;(appendTo ? appendTo(targetChatId, 'assistant', data.reply ?? JSON.stringify(data.raw)) : append('assistant', data.reply ?? JSON.stringify(data.raw)))
+								} else if (engine === 'orchestrator') {
+									// Directly call our backend orchestrator
+									const payload = await orchClient.chat(convId, text.trim(), { historyLimit: 12 })
+									const reply = payload?.orchestrator?.directResponse ?? JSON.stringify(payload)
+									;(appendTo ? appendTo(targetChatId, 'assistant', reply) : append('assistant', reply))
 								} else {
 								// Try SSE streaming first
 									let done = false

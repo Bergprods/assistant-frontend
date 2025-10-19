@@ -76,7 +76,11 @@ export function Sidebar({
         <div className="sidebar-section subjects">
           <div className="section-header d-flex justify-content-between align-items-center">
             <span>{st('nav.projects', 'Projekt')}</span>
-            <button className="btn btn-sm btn-outline-secondary" onClick={createSubject}>+</button>
+            <button className="add-project-btn icon-button" aria-label={st('projects.new', 'Nytt projekt')} title={st('projects.new', 'Nytt projekt')} onClick={createSubject}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <path d="M12 5v14M5 12h14" stroke="#cfe8ff" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
           </div>
           {subjects.length === 0 && (
             <div className="empty-note">{t('projects.empty') || 'Inga projekt att visa'}</div>

@@ -8,16 +8,18 @@ export function useMessages(selectedChatId) {
 
 	function append(role, content) {
 		if (!selectedChatId) return
-		setMessagesMap(mm => {
+			const now = new Date().toISOString()
+			setMessagesMap(mm => {
 			const list = mm[selectedChatId] || []
-			return { ...mm, [selectedChatId]: [...list, { role, content }] }
+				return { ...mm, [selectedChatId]: [...list, { role, content, t: now }] }
 		})
 	}
 	function appendTo(chatId, role, content) {
 		if (!chatId) return
-		setMessagesMap(mm => {
+			const now = new Date().toISOString()
+			setMessagesMap(mm => {
 			const list = mm[chatId] || []
-			return { ...mm, [chatId]: [...list, { role, content }] }
+				return { ...mm, [chatId]: [...list, { role, content, t: now }] }
 		})
 	}
 	function clearChat() {

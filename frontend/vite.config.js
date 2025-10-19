@@ -20,6 +20,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      '/api': {
+        target: 'http://assistant-backend:8000',
+        changeOrigin: true,
+        secure: false,
+      },
       // forward API calls to the backend service name inside the compose network
       '/router': {
         target: 'http://router-gpt:8000',

@@ -666,3 +666,28 @@ body {
 
     background-color: #13313f;
 }
+
+/* Sidebar projects header: icon-only + button */
+.sidebar .sidebar-section.subjects > .section-header .icon-button.add-project-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px !important;
+  margin: 0 !important;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sidebar .sidebar-section.subjects > .section-header .icon-button.add-project-btn svg {
+  width: 16px; height: 16px; display:block;
+}
+.sidebar .sidebar-section.subjects > .section-header .icon-button.add-project-btn:hover {
+  background: rgba(207,232,255,0.08);
+}
+.sidebar .sidebar-section.subjects > .section-header .icon-button.add-project-btn:active {
+  transform: translateY(1px);
+}
