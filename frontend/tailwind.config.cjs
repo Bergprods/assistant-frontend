@@ -1,24 +1,32 @@
-/** @type {import('tailwindcss').Config} */
+require('ts-node').register({
+  transpileOnly: true,
+})
+
+const { DESIGN_TOKENS } = require('./src/shared/theme/tokens.ts')
+
+const spacing = Object.fromEntries(
+  Object.entries(DESIGN_TOKENS.spacing).map(([key, value]) => [key, value])
+)
+
+const borderRadius = Object.fromEntries(
+  Object.entries(DESIGN_TOKENS.radius).map(([key, value]) => [key, value])
+)
+
 module.exports = {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  darkMode: 'class',
+  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        indigo: {
-          50: '#f5f7ff',
-          100: '#ebefff',
-          200: '#cfd8ff',
-          300: '#b3c0ff',
-          400: '#7f90ff',
-          500: '#5a6bff',
-          600: '#4a54e6',
-          700: '#3a3bbf',
-          800: '#2a2a99',
-          900: '#141466',
-        }
-      }
-    }
+        surface: DESIGN_TOKENS.colors.surface,
+        text: DESIGN_TOKENS.colors.text,
+        accent: DESIGN_TOKENS.colors.accent,
+        border: DESIGN_TOKENS.colors.border,
+      },
+      spacing,
+      borderRadius,
+      boxShadow: DESIGN_TOKENS.shadow,
+      fontFamily: DESIGN_TOKENS.fontFamily,
+    },
   },
   plugins: [],
 }
