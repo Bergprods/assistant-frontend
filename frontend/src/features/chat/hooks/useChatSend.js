@@ -30,8 +30,16 @@ export function useChatSend({ conversationId, selectedChatId, append, appendTo, 
 									;(appendTo ? appendTo(targetChatId, 'assistant', data.reply ?? JSON.stringify(data.raw)) : append('assistant', data.reply ?? JSON.stringify(data.raw)))
 								} else if (engine === 'orchestrator') {
 									// Directly call our backend orchestrator
-									const payload = await orchClient.chat(convId, text.trim(), { historyLimit: 12 })
-									const reply = payload?.orchestrator?.directResponse ?? JSON.stringify(payload)
+										const payload = await orchClient.chat(convId, text.trim(), { historyLimit: 12 })
+										const reply = (
+											payload?.orchestrator?.direct_response
+											?? payload?.orchestrator?.directResponse
+											?? payload?.orchestrator?.directMessage
+											?? payload?.direct_response
+											?? payload?.directResponse
+											?? payload?.directMessage
+											?? JSON.stringify(payload)
+										)
 									;(appendTo ? appendTo(targetChatId, 'assistant', reply) : append('assistant', reply))
 								} else {
 								// Try SSE streaming first

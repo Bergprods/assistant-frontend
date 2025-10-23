@@ -20,6 +20,13 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // Forward conversator API calls to conversator service
+      '/conversator': {
+        target: 'http://conversator:8082/api/conversator',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/conversator/, ''),
+        secure: false,
+      },
       '/api': {
         target: 'http://assistant-backend:8000',
         changeOrigin: true,
