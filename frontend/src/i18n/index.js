@@ -11,10 +11,16 @@ function interpolate(str, vars) {
   return str.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : `{${k}}`))
 }
 
-export function I18nProvider({ initial='sv', children }) {
+export function I18nProvider({ initial = 'sv', children }) {
   const [lang, setLang] = useState(initial)
   const dict = dictionaries[lang] || dictionaries.sv
-  const t = useCallback((key, vars) => interpolate(dict[key] || key, vars), [dict])
+  const t = useCallback((key, arg1, arg2) => {
+    const hasVars = arg1 && typeof arg1 === 'object' && !Array.isArray(arg1)
+    const vars = hasVars ? arg1 : undefined
+    const fallback = hasVars ? (typeof arg2 === 'string' ? arg2 : undefined) : typeof arg1 === 'string' ? arg1 : undefined
+    const template = dict[key] || fallback || key
+    return interpolate(template, vars)
+  }, [dict])
   const value = useMemo(() => ({ t, lang, setLang }), [t, lang])
   return React.createElement(I18nContext.Provider, { value }, children)
 }

@@ -1,0 +1,10 @@
+@import "../shared/theme/tokens.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-surface-base text-text-primary font-sans antialiased; }
+  a { @apply text-accent-primary transition-colors duration-150; }
+  a:hover { @apply text-accent-primary/80; }
+}

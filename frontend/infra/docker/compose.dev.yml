@@ -1,0 +1,122 @@
+version: "3.9"
+
+services:
+  assistant-core:
+    profiles:
+      - skip
+  assistant-backend:
+    build:
+      context: ../../assistant-backend
+      dockerfile: Dockerfile
+    volumes:
+      - ../../assistant-backend:/app:delegated
+      - ../../My_Assistant_Core:/app/my_ai_assistant:delegated
+      - ../../assistant-common/json-templates:/app/prompts/json-templates:ro
+    command: uvicorn app:app --reload --host 0.0.0.0 --port 8000
+    ports:
+      - "8001:8000"
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - appnet
+    env_file:
+      - ../../My_Assistant_Core/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://assistant:assistant@postgres:5432/assistantdb
+
+  prompt-layer:
+    build:
+      context: ../..
+      dockerfile: prompt_layer/Dockerfile
+    volumes:
+      - ../../prompt_layer:/app/prompt_layer:delegated
+    environment:
+      # Token used by callers (conversator etc.) when posting logs
+      - PL_PROXY_TOKEN=${PL_PROXY_TOKEN:-changeme}
+      # Optional: forward logs to a remote endpoint or PromptLayer account
+      - PROMPTLAYER_API_KEY=${PROMPTLAYER_API_KEY:-}
+      - PROMPTLAYER_FORWARD_URL=${PROMPTLAYER_FORWARD_URL:-}
+    command: uvicorn prompt_layer.api.main:app --reload --host 0.0.0.0 --port 8090
+    ports:
+      - "8090:8090"
+    networks:
+      - appnet
+
+  conversator:
+    build:
+      context: ../..
+      dockerfile: converstrator/Dockerfile
+    volumes:
+      - ../../converstrator:/app/converstrator:delegated
+    env_file:
+      - ../../converstrator/.env
+    environment:
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.2}
+      - REDIS_URL=redis://redis:6379/0
+      - PROMPTLAYER_API_KEY=${PROMPTLAYER_API_KEY:-}
+      - PL_PROXY_TOKEN=${PL_PROXY_TOKEN:-changeme}
+      - PL_PROXY_URL=http://prompt-layer:8090/log
+      - CONTAINERIZED=1
+    command: uvicorn converstrator.api.main:app --reload --host 0.0.0.0 --port 8082
+    depends_on:
+      - prompt-layer
+      - redis
+    ports:
+      - "8082:8082"
+    networks:
+      - appnet
+
+  frontend:
+    build:
+      context: ../../assistant-frontend/frontend  # React project folder
+      dockerfile: Dockerfile                    # Vite Dockerfile
+    volumes:
+      - ../../assistant-frontend/frontend:/app:delegated # mount source for HMR
+      - /app/node_modules                            # use container-specific node_modules
+    command:
+      - npm
+      - run
+      - dev
+      - --   # pass args to script
+      - --host
+      - "0.0.0.0"
+    ports:
+      - "127.0.0.1:5173:5173"   # bind to localhost on a static port for dev convenience
+    environment:
+      - VITE_HOST=127.0.0.1
+    depends_on:
+      - assistant-backend
+    networks:
+      - appnet
+
+  redis:
+    image: redis:7-alpine
+    command:
+      - redis-server
+      - "--appendonly"
+      - "no"
+    # No host port binding to avoid conflicts in dev; reachable on appnet as 'redis:6379'
+    networks:
+      - appnet
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=assistant
+      - POSTGRES_PASSWORD=assistant
+      - POSTGRES_DB=assistantdb
+    # No host port binding to avoid conflicts in dev; reachable on appnet as 'postgres:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes:
+  pgdata:
