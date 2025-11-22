@@ -8,6 +8,27 @@ import { TaskTable } from '@features/tasks/components/TaskTable'
 import { HealthModal } from '@features/health/components/HealthModal'
 import { useMessages, useChatSend, useTasksData, useHealthPanel } from '../hooks'
 
+// Type definitions for outlet context and local usage
+interface ChatMeta { id: string; name: string }
+interface SubjectMeta { id: string; name: string; chats: ChatMeta[] }
+interface OutletContext {
+  subjects: SubjectMeta[]
+  selectedSubjectId: string | null
+  selectedChatId: string | null
+  conversationId: string | null
+  createSubject: (name: string) => SubjectMeta
+  createChat: (subjectId: string, name: string) => string
+  selectChat: (subjectId: string, chatId: string) => void
+  deleteChat: (subjectId: string, chatId: string) => void
+  renameSubject: (subjectId: string, name: string) => void
+  renameChat: (subjectId: string, chatId: string, name: string) => void
+  isMobile: boolean
+  sidebarOpen: boolean
+  toggleSidebar: () => void
+}
+
+interface Task { agent: string; [key: string]: any }
+
 export function ChatPage() {
   const { t } = useI18n()
   // Engine selection needs to be available before hooks that depend on it
@@ -18,13 +39,16 @@ export function ChatPage() {
     subjects, selectedSubjectId, selectedChatId, conversationId,
     createSubject, createChat, selectChat, deleteChat, renameSubject, renameChat,
     isMobile, sidebarOpen, toggleSidebar
-  } = useOutletContext()
+  } = useOutletContext<OutletContext>()
   const { messages, append, appendTo, clearChat, endRef } = useMessages(selectedChatId)
   // Model selection (synced with HeaderCard localStorage key)
   const MODEL_KEY = 'assistant_selected_model'
   const [model, setModel] = useState(()=> localStorage.getItem(MODEL_KEY) || 'gpt-4o-mini')
   useEffect(()=>{ localStorage.setItem(MODEL_KEY, model) }, [model])
-  const { tasks, setTasks } = useTasksData({ enableServerTasks: engine !== 'orchestrator' })
+  const { tasks, setTasks } = useTasksData({ enableServerTasks: engine !== 'orchestrator' }) as {
+    tasks: Task[];
+    setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+  }
   const { showHealth, openHealthModal, closeHealthModal, healthLoading, healthError, healthData, dbHealthData,
     containersOpen, setContainersOpen, databasesOpen, setDatabasesOpen, lastHealthTs, fetchHealth, autoRefresh, setAutoRefresh } = useHealthPanel()
   const [agentFilter, setAgentFilter] = useState('all')
@@ -32,7 +56,7 @@ export function ChatPage() {
   const [hideSmalltalkTasks, setHideSmalltalkTasks] = useState(() => localStorage.getItem('hide_smalltalk_tasks') === '1')
   useEffect(()=>{ localStorage.setItem('hide_smalltalk_tasks', hideSmalltalkTasks ? '1' : '0') }, [hideSmalltalkTasks])
   const [showTasks, setShowTasks] = useState(false)
-  const { sendMessage, loading, error } = useChatSend({ conversationId, selectedChatId, append, appendTo, addTask: task => setTasks(t => [task, ...t]), t, model, engine })
+  const { sendMessage, loading, error } = useChatSend({ conversationId, selectedChatId, append, appendTo, addTask: (task: Task) => setTasks(t => [task, ...t]), t, model, engine })
 
   // Ensure a subject & chat exist when user first sends a message
   function ensureChat() {
@@ -48,23 +72,34 @@ export function ChatPage() {
     return chatId
   }
 
-  function handleSend(text){
+  function handleSend(text: string){
     const chatId = ensureChat()
     if (!chatId) return
     sendMessage(text, chatId)
   }
   function handleCreateSubject(){ const name = prompt(t('prompt.subject.name') || 'Subject name:'); if(name) createSubject(name) }
-  function handleCreateChat(subjId){ const name = prompt(t('prompt.chat.name') || 'Chat name:') || t('prompt.chat.default') || 'Ny chat'; if(name) createChat(subjId, name) }
-  function handleDeleteChat(subjId, chatId){ if(confirm(t('confirm.chat.delete') || 'Ta bort chat?')) deleteChat(subjId, chatId) }
-  function handleRenameSubject(subjId){ const subj = subjects.find(s=>s.id===subjId); if(!subj) return; const name = prompt(t('prompt.subject.rename') || 'Nytt namn för subject:', subj.name); if(name) renameSubject(subjId, name) }
-  function handleRenameChat(subjId, chatId){ const subj = subjects.find(s=>s.id===subjId); if(!subj) return; const ch = subj.chats.find(c=>c.id===chatId); if(!ch) return; const name = prompt(t('prompt.chat.rename') || 'Nytt namn för chat:', ch.name); if(name) renameChat(subjId, chatId, name) }
+  function handleCreateChat(subjId: string){ const name = prompt(t('prompt.chat.name') || 'Chat name:') || t('prompt.chat.default') || 'Ny chat'; if(name) createChat(subjId, name) }
+  function handleDeleteChat(subjId: string, chatId: string){ if(confirm(t('confirm.chat.delete') || 'Ta bort chat?')) deleteChat(subjId, chatId) }
+  function handleRenameSubject(subjId: string){ const subj = subjects.find(s=>s.id===subjId); if(!subj) return; const name = prompt(t('prompt.subject.rename') || 'Nytt namn för subject:', subj.name); if(name) renameSubject(subjId, name) }
+  function handleRenameChat(subjId: string, chatId: string){ const subj = subjects.find(s=>s.id===subjId); if(!subj) return; const ch = subj.chats.find(c=>c.id===chatId); if(!ch) return; const name = prompt(t('prompt.chat.rename') || 'Nytt namn för chat:', ch.name); if(name) renameChat(subjId, chatId, name) }
+  function handleNewChat(){
+    let subjId = selectedSubjectId
+    if(!subjId){
+      const newSubject = createSubject(t('prompt.subject.default') || 'Allmänt')
+      subjId = newSubject.id
+    }
+    const chatName = t('prompt.chat.default') || 'Ny chat'
+    const chatId = createChat(subjId, chatName)
+    selectChat(subjId, chatId)
+  }
   return (
     <>
   <div className="flex flex-col h-full w-full min-h-0">
         <HeaderCard
-          onModelChange={(m)=> setModel(m)}
+          onModelChange={(m: string)=> setModel(m)}
           engine={engine}
           onEngineChange={setEngine}
+          onNewChat={handleNewChat}
           t={t}
           isMobile={isMobile}
           sidebarOpen={sidebarOpen}
